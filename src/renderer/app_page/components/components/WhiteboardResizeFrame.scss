@@ -1,0 +1,251 @@
+.whiteboard-resize-frame {
+  position: absolute;
+  inset: 0;
+  margin: 10px;
+  cursor: move;
+  pointer-events: auto;
+
+  .whiteboard-resize-frame__hint {
+    z-index: -1;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: var(--gray-500);
+    font-family: var(--font-primary);
+    font-size: 70px;
+    transform: translate(-50%, -50%);
+    user-select: none;
+  }
+
+  .whiteboard-resize-frame__border {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    pointer-events: none;
+
+    rect {
+      fill: none;
+      stroke: var(--gray-500);
+      stroke-width: 2px;
+      stroke-dasharray: 20 15;
+    }
+  }
+
+  .whiteboard-resize-frame__handle {
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--gray-500);
+    border-radius: 50%;
+    background-color: var(--gray-25);
+    box-sizing: border-box;
+    transition: border-color 0.3s ease;
+
+    &:hover {
+      border-color: var(--blue-500);
+    }
+  }
+
+  .whiteboard-resize-frame__snap {
+    --whiteboard-resize-snap-offset: 15px;
+
+    position: absolute;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+
+    &:hover {
+      .whiteboard-resize-frame__snap-preview {
+        border-color: var(--blue-500);
+
+        .whiteboard-resize-frame__snap-preview-fill {
+          background-color: var(--blue-500);
+        }
+      }
+    }
+
+    .whiteboard-resize-frame__snap-preview {
+      position: relative;
+      width: 30px;
+      height: 30px;
+      border: 2px solid var(--gray-500);
+      border-radius: 5px;
+      box-sizing: border-box;
+
+      transition: border-color 0.3s ease, background-color 0.3s ease;
+
+      .whiteboard-resize-frame__snap-preview-fill {
+        position: absolute;
+        border-radius: 2px;
+        background-color: var(--gray-500);
+        transition: background-color 0.3s ease;
+      }
+    }
+  }
+
+  .whiteboard-resize-frame__snap--n,
+  .whiteboard-resize-frame__snap--s {
+    .whiteboard-resize-frame__snap-preview-fill {
+      left: 4px;
+      width: 18px;
+      height: 8px;
+    }
+  }
+
+  .whiteboard-resize-frame__snap--e,
+  .whiteboard-resize-frame__snap--w {
+    .whiteboard-resize-frame__snap-preview-fill {
+      top: 4px;
+      width: 8px;
+      height: 18px;
+    }
+  }
+
+  .whiteboard-resize-frame__snap--nw,
+  .whiteboard-resize-frame__snap--ne,
+  .whiteboard-resize-frame__snap--se,
+  .whiteboard-resize-frame__snap--sw {
+    .whiteboard-resize-frame__snap-preview-fill {
+      width: 9px;
+      height: 9px;
+    }
+  }
+
+  .whiteboard-resize-frame__snap--n .whiteboard-resize-frame__snap-preview-fill,
+  .whiteboard-resize-frame__snap--nw .whiteboard-resize-frame__snap-preview-fill,
+  .whiteboard-resize-frame__snap--ne .whiteboard-resize-frame__snap-preview-fill {
+    top: 4px;
+  }
+
+  .whiteboard-resize-frame__snap--s .whiteboard-resize-frame__snap-preview-fill,
+  .whiteboard-resize-frame__snap--se .whiteboard-resize-frame__snap-preview-fill,
+  .whiteboard-resize-frame__snap--sw .whiteboard-resize-frame__snap-preview-fill {
+    bottom: 4px;
+  }
+
+  .whiteboard-resize-frame__snap--e .whiteboard-resize-frame__snap-preview-fill,
+  .whiteboard-resize-frame__snap--ne .whiteboard-resize-frame__snap-preview-fill,
+  .whiteboard-resize-frame__snap--se .whiteboard-resize-frame__snap-preview-fill {
+    right: 4px;
+  }
+
+  .whiteboard-resize-frame__snap--w .whiteboard-resize-frame__snap-preview-fill,
+  .whiteboard-resize-frame__snap--nw .whiteboard-resize-frame__snap-preview-fill,
+  .whiteboard-resize-frame__snap--sw .whiteboard-resize-frame__snap-preview-fill {
+    left: 4px;
+  }
+
+  .whiteboard-resize-frame__snap--nw,
+  .whiteboard-resize-frame__snap--n,
+  .whiteboard-resize-frame__snap--ne {
+    top: var(--whiteboard-resize-snap-offset);
+  }
+
+  .whiteboard-resize-frame__snap--se,
+  .whiteboard-resize-frame__snap--s,
+  .whiteboard-resize-frame__snap--sw {
+    bottom: var(--whiteboard-resize-snap-offset);
+  }
+
+  .whiteboard-resize-frame__snap--nw,
+  .whiteboard-resize-frame__snap--w,
+  .whiteboard-resize-frame__snap--sw {
+    left: var(--whiteboard-resize-snap-offset);
+  }
+
+  .whiteboard-resize-frame__snap--ne,
+  .whiteboard-resize-frame__snap--e,
+  .whiteboard-resize-frame__snap--se {
+    right: var(--whiteboard-resize-snap-offset);
+  }
+
+  .whiteboard-resize-frame__snap--n,
+  .whiteboard-resize-frame__snap--s {
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .whiteboard-resize-frame__snap--w,
+  .whiteboard-resize-frame__snap--e {
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  .whiteboard-resize-frame__handle--nw,
+  .whiteboard-resize-frame__handle--ne,
+  .whiteboard-resize-frame__handle--se,
+  .whiteboard-resize-frame__handle--sw {
+    --whiteboard-resize-handle-offset: -1px;
+  }
+
+  .whiteboard-resize-frame__handle--n,
+  .whiteboard-resize-frame__handle--e,
+  .whiteboard-resize-frame__handle--s,
+  .whiteboard-resize-frame__handle--w {
+    --whiteboard-resize-handle-offset: -7px;
+  }
+
+  .whiteboard-resize-frame__handle--nw,
+  .whiteboard-resize-frame__handle--n,
+  .whiteboard-resize-frame__handle--ne {
+    top: var(--whiteboard-resize-handle-offset);
+  }
+
+  .whiteboard-resize-frame__handle--sw,
+  .whiteboard-resize-frame__handle--s,
+  .whiteboard-resize-frame__handle--se {
+    bottom: var(--whiteboard-resize-handle-offset);
+  }
+
+  .whiteboard-resize-frame__handle--nw,
+  .whiteboard-resize-frame__handle--w,
+  .whiteboard-resize-frame__handle--sw {
+    left: var(--whiteboard-resize-handle-offset);
+  }
+
+  .whiteboard-resize-frame__handle--ne,
+  .whiteboard-resize-frame__handle--e,
+  .whiteboard-resize-frame__handle--se {
+    right: var(--whiteboard-resize-handle-offset);
+  }
+
+  .whiteboard-resize-frame__handle--n,
+  .whiteboard-resize-frame__handle--s {
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .whiteboard-resize-frame__handle--w,
+  .whiteboard-resize-frame__handle--e {
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  .whiteboard-resize-frame__handle--nw,
+  .whiteboard-resize-frame__handle--se {
+    cursor: nwse-resize;
+  }
+
+  .whiteboard-resize-frame__handle--ne,
+  .whiteboard-resize-frame__handle--sw {
+    cursor: nesw-resize;
+  }
+
+  .whiteboard-resize-frame__handle--n,
+  .whiteboard-resize-frame__handle--s {
+    cursor: ns-resize;
+  }
+
+  .whiteboard-resize-frame__handle--w,
+  .whiteboard-resize-frame__handle--e {
+    cursor: ew-resize;
+  }
+}

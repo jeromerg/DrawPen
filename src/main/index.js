@@ -48,9 +48,26 @@ const schema = {
     type: 'string',
     default: 'white'
   },
-  whiteboard_size_percent: {
+  whiteboard_layout: {
+    type: 'object',
+    default: {
+      x: 10,
+      y: 10,
+      width: 80,
+      height: 80,
+    }
+  },
+  whiteboard_opacity: {
     type: 'number',
-    default: 80
+    default: 100
+  },
+  whiteboard_style: {
+    type: 'string',
+    default: 'dots'
+  },
+  whiteboard_spacing: {
+    type: 'number',
+    default: 40
   },
   show_tool_bar: {
     type: 'boolean',
@@ -666,7 +683,10 @@ ipcMain.handle('get_settings', () => {
   return {
     show_whiteboard: store.get('show_whiteboard'),
     whiteboard_color: store.get('whiteboard_color'),
-    whiteboard_size_percent: store.get('whiteboard_size_percent'),
+    whiteboard_layout: store.get('whiteboard_layout'),
+    whiteboard_opacity: store.get('whiteboard_opacity'),
+    whiteboard_style: store.get('whiteboard_style'),
+    whiteboard_spacing: store.get('whiteboard_spacing'),
     show_tool_bar: store.get('show_tool_bar'),
     show_drawing_border: store.get('show_drawing_border'),
     show_cute_cursor: store.get('show_cute_cursor'),
@@ -762,8 +782,6 @@ ipcMain.handle('get_configuration', () => {
   return {
     app_version:                              app.getVersion(),
 
-    whiteboard_color:                         store.get('whiteboard_color'),
-    whiteboard_size_percent:                  store.get('whiteboard_size_percent'),
     show_drawing_border:                      store.get('show_drawing_border'),
     show_cute_cursor:                         store.get('show_cute_cursor'),
     swap_colors_indexes:                      store.get('swap_colors_indexes'),
@@ -872,26 +890,6 @@ ipcMain.handle('set_show_drawing_border', (_event, value) => {
   return null;
 });
 
-ipcMain.handle('set_whiteboard_color', (_event, value) => {
-  rawLog('Setting whiteboard color:', value)
-
-  store.set('whiteboard_color', value)
-
-  refreshSettingsInRenderer()
-
-  return null;
-});
-
-ipcMain.handle('set_whiteboard_size_percent', (_event, value) => {
-  rawLog('Setting whiteboard size percent:', value)
-
-  store.set('whiteboard_size_percent', value)
-
-  refreshSettingsInRenderer()
-
-  return null;
-});
-
 ipcMain.handle('set_show_cute_cursor', (_event, value) => {
   rawLog('Setting cute cursor:', value)
 
@@ -971,8 +969,6 @@ ipcMain.handle('set_disable_toolbar_in_pointer_mode', (_event, value) => {
 
 function refreshSettingsInRenderer() {
   mainWindow.webContents.send('refresh_settings', {
-    whiteboard_color:        store.get('whiteboard_color'),
-    whiteboard_size_percent: store.get('whiteboard_size_percent'),
     show_drawing_border:     store.get('show_drawing_border'),
     show_cute_cursor:        store.get('show_cute_cursor'),
     swap_colors_indexes:     store.get('swap_colors_indexes'),

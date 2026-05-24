@@ -8,6 +8,7 @@ import CuteCursor from './components/CuteCursor.js';
 import RippleEffect from './components/RippleEffect.js';
 import Toast from './components/Toast.js';
 import TextEditor from './components/TextEditor.js';
+import Whiteboard from './components/Whiteboard.js';
 import {
   filterClosePoints,
   getMouseCoordinates,
@@ -77,8 +78,11 @@ const Application = (settings) => {
   const initialActiveWidth = settings.tool_bar_active_weight_index
   const initialShowToolbar = settings.show_tool_bar
   const initialShowWhiteboard = settings.show_whiteboard
-  const initialWhiteboardColor = settings.whiteboard_color
-  const initialWhiteboardSizePercent = settings.whiteboard_size_percent
+  const initialWhiteboardTheme = settings.whiteboard_color
+  const initialWhiteboardLayout = settings.whiteboard_layout
+  const initialWhiteboardOpacity = settings.whiteboard_opacity
+  const initialWhiteboardStyle = settings.whiteboard_style
+  const initialWhiteboardSpacing = settings.whiteboard_spacing
   const initialShowDrawingBorder = settings.show_drawing_border
   const initialShowCuteCursor = settings.show_cute_cursor
   const initialToolbarDefaultBrush = settings.tool_bar_default_brush
@@ -125,8 +129,11 @@ const Application = (settings) => {
   const [cursorType, setCursorType] = useState('crosshair');
   const [showToolbar, setShowToolbar] = useState(initialShowToolbar);
   const [showWhiteboard, setShowWhiteboard] = useState(initialShowWhiteboard);
-  const [whiteboardColor, setWhiteboardColor] = useState(initialWhiteboardColor);
-  const [whiteboardSizePercent, setWhiteboardSizePercent] = useState(initialWhiteboardSizePercent);
+  const [whiteboardTheme, setWhiteboardTheme] = useState(initialWhiteboardTheme);
+  const [whiteboardLayout, setWhiteboardLayout] = useState(initialWhiteboardLayout);
+  const [whiteboardOpacity, setWhiteboardOpacity] = useState(initialWhiteboardOpacity);
+  const [whiteboardPatternStyle, setWhiteboardPatternStyle] = useState(initialWhiteboardStyle);
+  const [whiteboardSpacing, setWhiteboardSpacing] = useState(initialWhiteboardSpacing);
   const [toolbarLastActiveBrush, setToolbarLastActiveBrush] = useState(initialToolbarDefaultBrush);
   const [toolbarLastActiveFigure, setToolbarLastActiveFigure] = useState(initialToolbarDefaultFigure);
   const [lastActivePen, setLastActivePen] = useState(initialLastActivePen);
@@ -1379,8 +1386,11 @@ const Application = (settings) => {
   const handleRefreshSettings = (_, newSettings) => {
     console.log('Main -> Renderer: Refresh Settings');
 
-    setWhiteboardColor(newSettings.whiteboard_color);
-    setWhiteboardSizePercent(newSettings.whiteboard_size_percent);
+    setWhiteboardTheme(newSettings.whiteboard_color);
+    setWhiteboardLayout(newSettings.whiteboard_layout);
+    setWhiteboardOpacity(newSettings.whiteboard_opacity);
+    setWhiteboardPatternStyle(newSettings.whiteboard_style);
+    setWhiteboardSpacing(newSettings.whiteboard_spacing);
     setShowDrawingBorder(newSettings.show_drawing_border);
     setShowCuteCursor(newSettings.show_cute_cursor);
     setMainColorIndex(newSettings.swap_colors_indexes[0]);
@@ -1412,6 +1422,34 @@ const Application = (settings) => {
     console.log('Renderer -> Main: Invoke Set Settings');
 
     window.electronAPI.invokeSetSettings(settings);
+  };
+
+  const handleChangeWhiteboardTheme = (theme) => {
+    setWhiteboardTheme(theme);
+    invokeSetSettings({ whiteboard_color: theme });
+  };
+
+  const handleChangeWhiteboardOpacity = (opacity) => {
+    setWhiteboardOpacity(opacity);
+    invokeSetSettings({ whiteboard_opacity: opacity });
+  };
+
+  const handleChangeWhiteboardPatternStyle = (style) => {
+    setWhiteboardPatternStyle(style);
+    invokeSetSettings({ whiteboard_style: style });
+  };
+
+  const handleChangeWhiteboardSpacing = (spacing) => {
+    setWhiteboardSpacing(spacing);
+    invokeSetSettings({ whiteboard_spacing: spacing });
+  };
+
+  const handleChangeWhiteboardLayout = (layout, saveToStore = false) => {
+    setWhiteboardLayout(layout);
+
+    if (saveToStore) {
+      invokeSetSettings({ whiteboard_layout: layout });
+    }
   };
 
   const handleToastClicked = () => {
@@ -1479,7 +1517,18 @@ const Application = (settings) => {
 
       {
         showWhiteboard &&
-        <div id="whiteboard" className={`whiteboard--${whiteboardColor} whiteboard--size-${whiteboardSizePercent}`}></div>
+        <Whiteboard
+          theme={whiteboardTheme}
+          layout={whiteboardLayout}
+          opacity={whiteboardOpacity}
+          patternStyle={whiteboardPatternStyle}
+          spacing={whiteboardSpacing}
+          onChangeTheme={handleChangeWhiteboardTheme}
+          onChangeOpacity={handleChangeWhiteboardOpacity}
+          onChangePatternStyle={handleChangeWhiteboardPatternStyle}
+          onChangeSpacing={handleChangeWhiteboardSpacing}
+          onChangeLayout={handleChangeWhiteboardLayout}
+        />
       }
 
       {
