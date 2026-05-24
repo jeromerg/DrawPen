@@ -1,5 +1,9 @@
 # Change Log
 
+## [0.0.51] - 2026-05-24
+### Features:
+- Add configurable whiteboard layout and appearance controls
+
 ## [0.0.50] - 2026-05-05
 ### Bug Fixes:
 - Add active display reset on monitor hotplug
