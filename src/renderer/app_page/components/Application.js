@@ -85,6 +85,7 @@ const Application = (settings) => {
   const initialWhiteboardSpacing = settings.whiteboard_spacing
   const initialShowDrawingBorder = settings.show_drawing_border
   const initialShowCuteCursor = settings.show_cute_cursor
+  const initialPenSmoothing = settings.pen_smoothing
   const initialToolbarDefaultBrush = settings.tool_bar_default_brush
   const initialToolbarDefaultFigure = settings.tool_bar_default_figure
   const initialToolbarCollapsed = settings.tool_bar_collapsed
@@ -150,6 +151,7 @@ const Application = (settings) => {
   const [isFadeDrawing, setIsFadeDrawing] = useState(false);
   const [showDrawingBorder, setShowDrawingBorder] = useState(initialShowDrawingBorder);
   const [showCuteCursor, setShowCuteCursor] = useState(initialShowCuteCursor);
+  const [penSmoothing, setPenSmoothing] = useState(initialPenSmoothing);
   const [mainColorIndex, setMainColorIndex] = useState(initialMainColorIndex);
   const [secondaryColorIndex, setSecondaryColorIndex] = useState(initialSecondaryColorIndex);
   const [toastInfo, setToastInfo] = useState(null);
@@ -1242,7 +1244,7 @@ const Application = (settings) => {
       if (activeTool === 'fadepen') {
         const currentFigure = allFadeFigures.at(-1);
 
-        if (colorList[currentFigure.colorIndex].name !== 'color_rainbow') {
+        if (penSmoothing && colorList[currentFigure.colorIndex].name !== 'color_rainbow') {
           currentFigure.points = [...filterClosePoints(currentFigure.points, currentFigure.widthIndex)];
         }
 
@@ -1253,7 +1255,7 @@ const Application = (settings) => {
       if (activeTool === 'pen') {
         const currentFigure = allFigures.at(-1);
 
-        if (colorList[currentFigure.colorIndex].name !== 'color_rainbow') {
+        if (penSmoothing && colorList[currentFigure.colorIndex].name !== 'color_rainbow') {
           currentFigure.points = [...filterClosePoints(currentFigure.points, currentFigure.widthIndex)];
         }
 
@@ -1393,6 +1395,7 @@ const Application = (settings) => {
     setWhiteboardSpacing(newSettings.whiteboard_spacing);
     setShowDrawingBorder(newSettings.show_drawing_border);
     setShowCuteCursor(newSettings.show_cute_cursor);
+    setPenSmoothing(newSettings.pen_smoothing);
     setMainColorIndex(newSettings.swap_colors_indexes[0]);
     setSecondaryColorIndex(newSettings.swap_colors_indexes[1]);
   };

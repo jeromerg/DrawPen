@@ -120,6 +120,10 @@ const schema = {
     type: 'boolean',
     default: true
   },
+  pen_smoothing: {
+    type: 'boolean',
+    default: true
+  },
   app_icon_color: {
     type: 'string',
     default: 'default'
@@ -690,6 +694,7 @@ ipcMain.handle('get_settings', () => {
     show_tool_bar: store.get('show_tool_bar'),
     show_drawing_border: store.get('show_drawing_border'),
     show_cute_cursor: store.get('show_cute_cursor'),
+    pen_smoothing: store.get('pen_smoothing'),
     tool_bar_x: store.get('tool_bar_x'),
     tool_bar_y: store.get('tool_bar_y'),
     tool_bar_active_tool: store.get('tool_bar_active_tool'),
@@ -784,6 +789,7 @@ ipcMain.handle('get_configuration', () => {
 
     show_drawing_border:                      store.get('show_drawing_border'),
     show_cute_cursor:                         store.get('show_cute_cursor'),
+    pen_smoothing:                            store.get('pen_smoothing'),
     swap_colors_indexes:                      store.get('swap_colors_indexes'),
     fade_disappear_after_ms:                  store.get('fade_disappear_after_ms'),
     fade_out_duration_time_ms:                store.get('fade_out_duration_time_ms'),
@@ -900,6 +906,16 @@ ipcMain.handle('set_show_cute_cursor', (_event, value) => {
   return null;
 });
 
+ipcMain.handle('set_pen_smoothing', (_event, value) => {
+  rawLog('Setting pen smoothing:', value)
+
+  store.set('pen_smoothing', value)
+
+  refreshSettingsInRenderer();
+
+  return null;
+});
+
 ipcMain.handle('set_swap_colors', (_event, value) => {
   rawLog('Setting swap colors:', value)
 
@@ -969,8 +985,14 @@ ipcMain.handle('set_disable_toolbar_in_pointer_mode', (_event, value) => {
 
 function refreshSettingsInRenderer() {
   mainWindow.webContents.send('refresh_settings', {
+    whiteboard_color:        store.get('whiteboard_color'),
+    whiteboard_layout:       store.get('whiteboard_layout'),
+    whiteboard_opacity:      store.get('whiteboard_opacity'),
+    whiteboard_style:        store.get('whiteboard_style'),
+    whiteboard_spacing:      store.get('whiteboard_spacing'),
     show_drawing_border:     store.get('show_drawing_border'),
     show_cute_cursor:        store.get('show_cute_cursor'),
+    pen_smoothing:           store.get('pen_smoothing'),
     swap_colors_indexes:     store.get('swap_colors_indexes'),
   })
 }
