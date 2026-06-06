@@ -15,9 +15,10 @@
     align-items: center;
     color: var(--gray-500);
     font-family: var(--font-primary);
-    font-size: 70px;
+    font-size: 50px;
     transform: translate(-50%, -50%);
     user-select: none;
+    pointer-events: none;
   }
 
   .whiteboard-resize-frame__border {
@@ -116,6 +117,19 @@
     .whiteboard-resize-frame__snap-preview-fill {
       width: 9px;
       height: 9px;
+    }
+  }
+
+  .whiteboard-resize-frame__snap--center {
+    top: calc(50% + 60px);
+    left: 50%;
+    transform: translateX(-50%);
+
+    .whiteboard-resize-frame__snap-preview-fill {
+      top: 4px;
+      left: 4px;
+      width: 18px;
+      height: 18px;
     }
   }
 

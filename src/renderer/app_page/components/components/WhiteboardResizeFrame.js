@@ -2,6 +2,7 @@ import React from 'react';
 import './WhiteboardResizeFrame.scss';
 
 const RESIZE_HANDLES = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
+const CENTER_SNAP_HANDLE = 'center';
 
 const WhiteboardResizeFrame = ({
   onStartMove,
@@ -34,7 +35,7 @@ const WhiteboardResizeFrame = ({
     }
 
     {
-      RESIZE_HANDLES.map((handle) => (
+      [CENTER_SNAP_HANDLE, ...RESIZE_HANDLES].map((handle) => (
         <div
           key={handle}
           className={`whiteboard-resize-frame__snap whiteboard-resize-frame__snap--${handle}`}

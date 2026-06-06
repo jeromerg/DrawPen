@@ -62,7 +62,28 @@ const moveLayout = (layout, deltaX, deltaY) => ({
   y: layout.y + deltaY,
 });
 
-const SNAP_RESIZE_RATIOS = [50, 70, 30];
+const SNAP_RESIZE_RATIOS = [30, 50, 70];
+const CENTER_SNAP_HANDLE = 'center';
+const CENTER_SNAP_LAYOUTS = [
+  {
+    x: 0,
+    y: 0,
+    width: 100,
+    height: 100,
+  },
+  {
+    x: 5,
+    y: 5,
+    width: 90,
+    height: 90,
+  },
+  {
+    x: 10,
+    y: 10,
+    width: 80,
+    height: 80,
+  },
+];
 
 const getSnapResizeLayout = (handle, ratio) => {
   const isLeft = handle.includes('w');
@@ -77,6 +98,10 @@ const getSnapResizeLayout = (handle, ratio) => {
     height: isTop || isBottom ? ratio : 100,
   };
 };
+
+const getNextSnapIndex = (previousSnap, handle, snapCount) => (
+  previousSnap.handle === handle ? (previousSnap.snapIndex + 1) % snapCount : 0
+);
 
 const Whiteboard = ({
   theme,
@@ -98,7 +123,7 @@ const Whiteboard = ({
 
   const interactionRef = useRef(null);
   const latestLayoutRef = useRef(null);
-  const lastSnapResizeRef = useRef({ handle: null, ratioIndex: -1 });
+  const lastSnapResizeRef = useRef({ handle: null, snapIndex: -1 });
 
   latestLayoutRef.current = currentLayout;
 
@@ -145,7 +170,7 @@ const Whiteboard = ({
       startClientY: event.clientY,
       startLayout: currentLayout,
     };
-    lastSnapResizeRef.current = { handle: null, ratioIndex: -1 };
+    lastSnapResizeRef.current = { handle: null, snapIndex: -1 };
 
     window.addEventListener('pointermove', handlePointerMove);
     window.addEventListener('pointerup', handlePointerUp);
@@ -168,10 +193,11 @@ const Whiteboard = ({
     event.stopPropagation();
 
     const previousSnap = lastSnapResizeRef.current;
-    const nextRatioIndex = previousSnap.handle === handle ? (previousSnap.ratioIndex + 1) % SNAP_RESIZE_RATIOS.length : 0;
-    const nextLayout = getSnapResizeLayout(handle, SNAP_RESIZE_RATIOS[nextRatioIndex]);
+    const snapCount = handle === CENTER_SNAP_HANDLE ? CENTER_SNAP_LAYOUTS.length : SNAP_RESIZE_RATIOS.length;
+    const nextSnapIndex = getNextSnapIndex(previousSnap, handle, snapCount);
+    const nextLayout = handle === CENTER_SNAP_HANDLE ? CENTER_SNAP_LAYOUTS[nextSnapIndex] : getSnapResizeLayout(handle, SNAP_RESIZE_RATIOS[nextSnapIndex]);
 
-    lastSnapResizeRef.current = { handle, ratioIndex: nextRatioIndex };
+    lastSnapResizeRef.current = { handle, snapIndex: nextSnapIndex };
     interactionRef.current = null;
     updateLayout(nextLayout, false);
 
@@ -208,7 +234,7 @@ const Whiteboard = ({
   const handleClickResize = () => {
     setIsSidebarOpen(false);
     setIsResizeMode(true);
-    lastSnapResizeRef.current = { handle: null, ratioIndex: -1 };
+    lastSnapResizeRef.current = { handle: null, snapIndex: -1 };
   };
 
   const SidebarIcon = isSidebarOpen ? LuPanelRightClose : LuPanelRightOpen;
