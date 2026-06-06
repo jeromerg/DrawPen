@@ -1,5 +1,16 @@
 # Change Log
 
+## [0.0.52] - 2026-06-07
+### Features:
+- Add configurable pen stroke smoothing
+- Add whiteboard snap resize presets
+
+### Improvements:
+- Add cycling snap sizes for whiteboard resize controls
+
+### Bug Fixes:
+- Fix color swap shortcut on non-English keyboard layouts
+
 ## [0.0.51] - 2026-05-24
 ### Features:
 - Add configurable whiteboard layout and appearance controls
