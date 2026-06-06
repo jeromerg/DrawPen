@@ -54,6 +54,7 @@ const ShortcutRow = ({ title, description, hint, shortcut, onCheck, onChange, on
 const Settings = (config) => {
   const [showDrawingBorder, setShowDrawingBorder] = useState(config.show_drawing_border);
   const [showCuteCursor, setShowCuteCursor] = useState(config.show_cute_cursor);
+  const [penSmoothing, setPenSmoothing] = useState(config.pen_smoothing);
   const [appIconColor, setAppIconColor] = useState(config.app_icon_color);
   const [fadeDisappearAfterMs, setFadeDisappearAfterMs] = useState(config.fade_disappear_after_ms);
   const [fadeOutDurationTimeMs, setFadeOutDurationTimeMs] = useState(config.fade_out_duration_time_ms);
@@ -153,6 +154,13 @@ const Settings = (config) => {
     setShowCuteCursor(nextState);
 
     window.electronAPI.setShowCuteCursor(nextState);
+  };
+
+  const togglePenSmoothing = () => {
+    const nextState = !penSmoothing;
+    setPenSmoothing(nextState);
+
+    window.electronAPI.setPenSmoothing(nextState);
   };
 
   const toggleLaunch = () => {
@@ -388,6 +396,20 @@ const Settings = (config) => {
                     <div
                       className={`toggle ${showCuteCursor ? '' : 'active'}`}
                       onClick={toggleCuteCursor}
+                    ></div>
+                  </div>
+                </div>
+
+                <div className="settings-item">
+                  <div className="settings-item-info">
+                    <div className="settings-item-title">Smooth Pen Strokes</div>
+                    <div className="settings-item-description">Turn off to keep raw strokes</div>
+                  </div>
+
+                  <div className="settings-item-control">
+                    <div
+                      className={`toggle ${penSmoothing ? 'active' : ''}`}
+                      onClick={togglePenSmoothing}
                     ></div>
                   </div>
                 </div>
