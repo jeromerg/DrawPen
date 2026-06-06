@@ -402,20 +402,6 @@ const Settings = (config) => {
 
                 <div className="settings-item">
                   <div className="settings-item-info">
-                    <div className="settings-item-title">Smooth Pen Strokes</div>
-                    <div className="settings-item-description">Turn off to keep raw strokes</div>
-                  </div>
-
-                  <div className="settings-item-control">
-                    <div
-                      className={`toggle ${penSmoothing ? 'active' : ''}`}
-                      onClick={togglePenSmoothing}
-                    ></div>
-                  </div>
-                </div>
-
-                <div className="settings-item">
-                  <div className="settings-item-info">
                     <div className="settings-item-title">Hide Extended Toolbar</div>
                     <div className="settings-item-description">Affects only Pointer Mode</div>
                   </div>
@@ -424,6 +410,19 @@ const Settings = (config) => {
                     <div
                       className={`toggle ${disableToolbarInPointerMode ? 'active' : ''}`}
                       onClick={toggleDisableToolbarInPointerMode}
+                    ></div>
+                  </div>
+                </div>
+
+                <div className="settings-item">
+                  <div className="settings-item-info">
+                    <div className="settings-item-title">Smooth Pen Strokes</div>
+                  </div>
+
+                  <div className="settings-item-control">
+                    <div
+                      className={`toggle ${penSmoothing ? 'active' : ''}`}
+                      onClick={togglePenSmoothing}
                     ></div>
                   </div>
                 </div>
@@ -601,7 +600,7 @@ const Settings = (config) => {
                     <button className="button" onClick={resetToOriginals}>Reset All</button>
                   </div>
                 </div>
-                
+
               </div>
             </div>
           </div>
