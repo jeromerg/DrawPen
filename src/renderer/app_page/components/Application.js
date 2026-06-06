@@ -231,6 +231,24 @@ const Application = (settings) => {
       return
     }
 
+    if (eventCode === 'keyx') {
+      if (['eraser', 'laser'].includes(activeTool)) {
+        return;
+      }
+
+      if (activeColorIndex !== mainColorIndex) {
+        handleChangeColor(mainColorIndex);
+        return;
+      }
+
+      if (activeColorIndex !== secondaryColorIndex) {
+        handleChangeColor(secondaryColorIndex);
+        return;
+      }
+
+      return;
+    }
+
     // Static keyboard shortcuts
     switch (eventKey) {
       case 'v': {
@@ -434,23 +452,6 @@ const Application = (settings) => {
           invokePointerMode();
         } else {
           lastEscapeAtRef.current = now;
-        }
-
-        break;
-      }
-      case 'x': {
-        if (['eraser', 'laser'].includes(activeTool)) {
-          break;
-        }
-
-        if (activeColorIndex !== mainColorIndex) {
-          handleChangeColor(mainColorIndex);
-          break;
-        }
-
-        if (activeColorIndex !== secondaryColorIndex) {
-          handleChangeColor(secondaryColorIndex);
-          break;
         }
 
         break;
