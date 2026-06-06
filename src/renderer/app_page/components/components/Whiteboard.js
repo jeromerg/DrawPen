@@ -62,6 +62,22 @@ const moveLayout = (layout, deltaX, deltaY) => ({
   y: layout.y + deltaY,
 });
 
+const SNAP_RESIZE_RATIOS = [50, 70, 30];
+
+const getSnapResizeLayout = (handle, ratio) => {
+  const isLeft = handle.includes('w');
+  const isRight = handle.includes('e');
+  const isTop = handle.includes('n');
+  const isBottom = handle.includes('s');
+
+  return {
+    x: isRight ? 100 - ratio : 0,
+    y: isBottom ? 100 - ratio : 0,
+    width: isLeft || isRight ? ratio : 100,
+    height: isTop || isBottom ? ratio : 100,
+  };
+};
+
 const Whiteboard = ({
   theme,
   layout,
@@ -82,6 +98,7 @@ const Whiteboard = ({
 
   const interactionRef = useRef(null);
   const latestLayoutRef = useRef(null);
+  const lastSnapResizeRef = useRef({ handle: null, ratioIndex: -1 });
 
   latestLayoutRef.current = currentLayout;
 
@@ -128,6 +145,7 @@ const Whiteboard = ({
       startClientY: event.clientY,
       startLayout: currentLayout,
     };
+    lastSnapResizeRef.current = { handle: null, ratioIndex: -1 };
 
     window.addEventListener('pointermove', handlePointerMove);
     window.addEventListener('pointerup', handlePointerUp);
@@ -149,19 +167,13 @@ const Whiteboard = ({
     event.preventDefault();
     event.stopPropagation();
 
-    const snapResizeLayouts = {
-      n:  { x: 0,  y: 0,  width: 100, height: 50  },
-      e:  { x: 50, y: 0,  width: 50,  height: 100 },
-      s:  { x: 0,  y: 50, width: 100, height: 50  },
-      w:  { x: 0,  y: 0,  width: 50,  height: 100 },
-      nw: { x: 0,  y: 0,  width: 50,  height: 50  },
-      ne: { x: 50, y: 0,  width: 50,  height: 50  },
-      se: { x: 50, y: 50, width: 50,  height: 50  },
-      sw: { x: 0,  y: 50, width: 50,  height: 50  },
-    };
+    const previousSnap = lastSnapResizeRef.current;
+    const nextRatioIndex = previousSnap.handle === handle ? (previousSnap.ratioIndex + 1) % SNAP_RESIZE_RATIOS.length : 0;
+    const nextLayout = getSnapResizeLayout(handle, SNAP_RESIZE_RATIOS[nextRatioIndex]);
 
+    lastSnapResizeRef.current = { handle, ratioIndex: nextRatioIndex };
     interactionRef.current = null;
-    updateLayout(snapResizeLayouts[handle], false);
+    updateLayout(nextLayout, false);
 
     window.removeEventListener('pointermove', handlePointerMove);
     window.removeEventListener('pointerup', handlePointerUp);
@@ -196,6 +208,7 @@ const Whiteboard = ({
   const handleClickResize = () => {
     setIsSidebarOpen(false);
     setIsResizeMode(true);
+    lastSnapResizeRef.current = { handle: null, ratioIndex: -1 };
   };
 
   const SidebarIcon = isSidebarOpen ? LuPanelRightClose : LuPanelRightOpen;

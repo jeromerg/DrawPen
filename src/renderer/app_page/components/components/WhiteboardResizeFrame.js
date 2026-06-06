@@ -39,6 +39,7 @@ const WhiteboardResizeFrame = ({
           key={handle}
           className={`whiteboard-resize-frame__snap whiteboard-resize-frame__snap--${handle}`}
           onPointerDown={(event) => onSnapResize(event, handle)}
+          onDoubleClick={(event) => event.stopPropagation()}
         >
           <div className="whiteboard-resize-frame__snap-preview">
             <div className="whiteboard-resize-frame__snap-preview-fill" />
