@@ -1,7 +1,7 @@
 {
   "name": "drawpen-stylus",
   "productName": "DrawPen Stylus",
-  "version": "0.0.52",
+  "version": "0.0.53",
   "description": "DrawPen with stylus auto-tool — a fork of DmytroVasin/DrawPen",
   "appId": "io.github.jeromerg.drawpenstylus",
   "author": {
