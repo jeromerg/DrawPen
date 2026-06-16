@@ -10,6 +10,8 @@ import {
   fadeDisappearAfterMax,
   fadeOutDurationTimeMsMin,
   fadeOutDurationTimeMsMax,
+  STYLUS_TOOL_OPTIONS,
+  STYLUS_ERASER_TOOL_OPTIONS,
 } from "../../app_page/components/constants.js";
 
 import {
@@ -20,6 +22,7 @@ import {
   IoChevronForward,
   IoColorPaletteOutline,
   IoApps,
+  IoBrushOutline,
 } from "react-icons/io5";
 import { HiSwitchHorizontal } from "react-icons/hi";
 import { FaRegKeyboard } from "react-icons/fa6";
@@ -71,6 +74,8 @@ const Settings = (config) => {
   const [mainColor, setMainColor]           = useState(config.swap_colors_indexes[0]);
   const [secondaryColor, setSecondaryColor] = useState(config.swap_colors_indexes[1]);
   const [drawingMonitor, setDrawingMonitor] = useState(config.drawing_monitor);
+  const [stylusTool, setStylusTool] = useState(config.stylus_tool || 'none');
+  const [stylusEraserTool, setStylusEraserTool] = useState(config.stylus_eraser_tool || 'eraser');
 
   const [activeTab, setActiveTab] = useState('shortcuts');
 
@@ -253,6 +258,18 @@ const Settings = (config) => {
     window.electronAPI.setDrawingMonitor(newMonitor);
   }
 
+  const selectStylusEraserTool = (event) => {
+    const value = event.target.value;
+    setStylusEraserTool(value);
+    window.electronAPI.setStylusEraserTool(value);
+  };
+
+  const selectStylusTool = (event) => {
+    const value = event.target.value;
+    setStylusTool(value);
+    window.electronAPI.setStylusTool(value);
+  };
+
   return (
     <div className="settings-page">
       <div className="settings-sidebar-wrapper">
@@ -279,6 +296,14 @@ const Settings = (config) => {
           >
             <IoApps className="icon" />
             Application
+          </div>
+
+          <div
+            className={`settings-sidebar-item ${activeTab === 'stylus' ? 'active' : ''}`}
+            onClick={() => setActiveTab('stylus')}
+          >
+            <IoBrushOutline className="icon" />
+            Stylus
           </div>
 
           <div className="settings-sidebar-version">
@@ -598,6 +623,79 @@ const Settings = (config) => {
 
                   <div className="settings-item-control">
                     <button className="button" onClick={resetToOriginals}>Reset All</button>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'stylus' && (
+          <div className="settings-container">
+            <div className="settings-header">
+              <div className="settings-title">Stylus</div>
+            </div>
+
+            <div className="settings-content">
+              <div className="settings-section">
+
+                <div className="settings-item">
+                  <div className="settings-item-info">
+                    <div className="settings-item-title">Tool on stylus movement</div>
+                    <div className="settings-item-description">Move a stylus to auto-activate this tool; move the mouse to switch back.</div>
+                    {
+                      !window.electronAPI.isWin &&
+                        <div className="settings-item-description">Available on Windows only</div>
+                    }
+                  </div>
+
+                  <div className="settings-item-control">
+                    <div className="selectbar-container">
+                      <select
+                        className="selectbar"
+                        value={stylusTool}
+                        onChange={selectStylusTool}
+                        disabled={!window.electronAPI.isWin}
+                      >
+                        {
+                          STYLUS_TOOL_OPTIONS.map(option => (
+                            <option key={option.value} value={option.value}>{option.label}</option>
+                          ))
+                        }
+                      </select>
+
+                      <div className="selectbar-arrow">
+                        <IoChevronDown className="icon" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="settings-item">
+                  <div className="settings-item-info">
+                    <div className="settings-item-title">Tool on stylus eraser</div>
+                    <div className="settings-item-description">Tool used while drawing with the stylus eraser end; releases back to the previous tool.</div>
+                  </div>
+
+                  <div className="settings-item-control">
+                    <div className="selectbar-container">
+                      <select
+                        className="selectbar"
+                        value={stylusEraserTool}
+                        onChange={selectStylusEraserTool}
+                      >
+                        {
+                          STYLUS_ERASER_TOOL_OPTIONS.map(option => (
+                            <option key={option.value} value={option.value}>{option.label}</option>
+                          ))
+                        }
+                      </select>
+
+                      <div className="selectbar-arrow">
+                        <IoChevronDown className="icon" />
+                      </div>
+                    </div>
                   </div>
                 </div>
 

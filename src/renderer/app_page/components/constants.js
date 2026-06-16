@@ -25,6 +25,32 @@ export const minWhiteboardHeight = 350;
 export const palmMinContactLength = 35; // Min touch contact length to detect a palm/fist
 export const palmMinContactArea = 2000;
 
+export const STYLUS_TOOL_OPTIONS = [
+  { value: 'none',        label: 'None' },
+  { value: 'pen',         label: 'Pen' },
+  { value: 'fadepen',     label: 'Fading Pen' },
+  { value: 'highlighter', label: 'Highlighter' },
+  { value: 'laser',       label: 'Laser' },
+  { value: 'arrow',       label: 'Arrow' },
+  { value: 'flat_arrow',  label: 'Flat Arrow' },
+  { value: 'rectangle',   label: 'Rectangle' },
+  { value: 'oval',        label: 'Oval' },
+  { value: 'line',        label: 'Line' },
+];
+
+export const STYLUS_ERASER_TOOL_OPTIONS = [
+  { value: 'eraser',      label: 'Eraser' },
+  { value: 'pen',         label: 'Pen' },
+  { value: 'fadepen',     label: 'Fading Pen' },
+  { value: 'highlighter', label: 'Highlighter' },
+  { value: 'laser',       label: 'Laser' },
+  { value: 'arrow',       label: 'Arrow' },
+  { value: 'flat_arrow',  label: 'Flat Arrow' },
+  { value: 'rectangle',   label: 'Rectangle' },
+  { value: 'oval',        label: 'Oval' },
+  { value: 'line',        label: 'Line' },
+];
+
 export const brushList = ['pen', 'fadepen'];
 export const shapeList = ['arrow', 'flat_arrow', 'rectangle', 'oval', 'line'];
 export const penVariantList = ['pen', 'fadepen'];
