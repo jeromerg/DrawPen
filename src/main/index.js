@@ -31,7 +31,8 @@ const KEY_NULL                 = '[NULL]'
 const STYLUS_TOOL_VALUES = ['none', 'pen', 'fadepen', 'highlighter', 'laser', 'arrow', 'flat_arrow', 'rectangle', 'oval', 'line']
 const STYLUS_ERASER_TOOL_VALUES = ['eraser', 'pen', 'fadepen', 'highlighter', 'laser', 'arrow', 'flat_arrow', 'rectangle', 'oval', 'line']
 
-const STYLUS_REVERT_GRACE_MS    = 1200
+const STYLUS_REVERT_GRACE_MIN   = 100
+const STYLUS_REVERT_GRACE_MAX   = 5000
 const STYLUS_MANUAL_SUPPRESS_MS = 1500
 
 const EXTENDED_TOOLBAR_WINDOW_MARGIN = 10
@@ -190,6 +191,10 @@ const schema = {
   stylus_eraser_tool: {
     type: 'string',
     default: 'eraser'
+  },
+  stylus_revert_grace_ms: {
+    type: 'number',
+    default: 500
   },
 };
 
@@ -834,6 +839,7 @@ ipcMain.handle('get_configuration', () => {
     disable_toolbar_in_pointer_mode:          store.get('disable_toolbar_in_pointer_mode'),
     stylus_tool:                              store.get('stylus_tool'),
     stylus_eraser_tool:                       store.get('stylus_eraser_tool'),
+    stylus_revert_grace_ms:                   store.get('stylus_revert_grace_ms'),
 
     key_binding_show_hide_app:                normalizeAcceleratorForUI(store.get('key_binding_show_hide_app')),
     key_binding_show_hide_app_default:        normalizeAcceleratorForUI(schema.key_binding_show_hide_app.default),
@@ -1040,6 +1046,16 @@ ipcMain.handle('set_stylus_eraser_tool', (_event, value) => {
   return null
 });
 
+ipcMain.handle('set_stylus_revert_grace_ms', (_event, value) => {
+  const ms = Math.min(STYLUS_REVERT_GRACE_MAX, Math.max(STYLUS_REVERT_GRACE_MIN, Number(value) || 0))
+
+  rawLog('[STYLUS] Setting stylus revert grace ms:', ms)
+
+  store.set('stylus_revert_grace_ms', ms)
+
+  return null
+});
+
 function refreshSettingsInRenderer() {
   mainWindow.webContents.send('refresh_settings', {
     whiteboard_color:        store.get('whiteboard_color'),
@@ -1172,7 +1188,7 @@ function onMouseActivity() {
       rawLog('[STYLUS] Mouse activity -> revert to pointer mode')
       enablePointerMode()
     }
-  }, STYLUS_REVERT_GRACE_MS)
+  }, store.get('stylus_revert_grace_ms'))
 }
 
 function reconfigureStylusWatcher() {

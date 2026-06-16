@@ -10,6 +10,8 @@ import {
   fadeDisappearAfterMax,
   fadeOutDurationTimeMsMin,
   fadeOutDurationTimeMsMax,
+  stylusRevertGraceMin,
+  stylusRevertGraceMax,
   STYLUS_TOOL_OPTIONS,
   STYLUS_ERASER_TOOL_OPTIONS,
 } from "../../app_page/components/constants.js";
@@ -76,6 +78,7 @@ const Settings = (config) => {
   const [drawingMonitor, setDrawingMonitor] = useState(config.drawing_monitor);
   const [stylusTool, setStylusTool] = useState(config.stylus_tool || 'none');
   const [stylusEraserTool, setStylusEraserTool] = useState(config.stylus_eraser_tool || 'eraser');
+  const [stylusRevertGraceMs, setStylusRevertGraceMs] = useState(config.stylus_revert_grace_ms);
 
   const [activeTab, setActiveTab] = useState('shortcuts');
 
@@ -262,6 +265,15 @@ const Settings = (config) => {
     const value = event.target.value;
     setStylusEraserTool(value);
     window.electronAPI.setStylusEraserTool(value);
+  };
+
+  const applyStylusRevertGraceMs = (value) => {
+    const ms = Math.min(stylusRevertGraceMax, Math.max(stylusRevertGraceMin, Number(value)));
+
+    if (ms === stylusRevertGraceMs) return;
+
+    setStylusRevertGraceMs(ms);
+    window.electronAPI.setStylusRevertGraceMs(ms);
   };
 
   const selectStylusTool = (event) => {
@@ -694,6 +706,29 @@ const Settings = (config) => {
 
                       <div className="selectbar-arrow">
                         <IoChevronDown className="icon" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="settings-item">
+                  <div className="settings-item-info">
+                    <div className="settings-item-title">Mouse recovery delay</div>
+                    <div className="settings-item-description">Delay before reverting to pointer mode after you move the mouse.</div>
+                    {
+                      !window.electronAPI.isWin &&
+                        <div className="settings-item-description">Available on Windows only</div>
+                    }
+                  </div>
+
+                  <div className="settings-item-control">
+                    <div className="stepper-container">
+                      <div className="stepper-button" onClick={() => applyStylusRevertGraceMs(stylusRevertGraceMs - timeStep)}>
+                        <FaMinus className="stepper-button--icon" />
+                      </div>
+                      <div className="stepper-value">{stylusRevertGraceMs / 1000}s</div>
+                      <div className="stepper-button" onClick={() => applyStylusRevertGraceMs(stylusRevertGraceMs + timeStep)}>
+                        <FaPlus className="stepper-button--icon" />
                       </div>
                     </div>
                   </div>
