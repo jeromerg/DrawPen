@@ -10,3 +10,5 @@ node_modules
 # Electron-Forge
 out/
 .private/
+# Downloaded CI build artifacts
+dist-ci/

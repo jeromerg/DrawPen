@@ -1,16 +1,16 @@
 {
-  "name": "drawpen",
-  "productName": "DrawPen",
+  "name": "drawpen-stylus",
+  "productName": "DrawPen Stylus",
   "version": "0.0.52",
-  "description": "DrawPen is a screen annotation tool built with web technology",
-  "appId": "dmytro.vasin.drawpen",
+  "description": "DrawPen with stylus auto-tool — a fork of DmytroVasin/DrawPen",
+  "appId": "io.github.jeromerg.drawpenstylus",
   "author": {
     "name": "DmytroVasin",
     "email": "dmytro.vasin@gmail.com"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/DmytroVasin/DrawPen"
+    "url": "https://github.com/jeromerg/DrawPen"
   },
   "private": true,
   "license": "MIT",

@@ -19,7 +19,7 @@ module.exports = {
       // asar), so unpack them.
       unpack: '**/node_modules/{koffi,@koromix}/**',
     },
-    executableName: process.platform === 'linux' ? packageJson.name : packageJson.productName,
+    executableName: process.platform === 'linux' ? packageJson.name : 'DrawPenStylus',
     icon: path.join(rootDir, 'assets/build/icon'),
     appBundleId: packageJson.appId,
     ...(process.argv.includes('--no-sign')
@@ -52,9 +52,9 @@ module.exports = {
         setupIcon: path.join(rootDir, 'assets/build/icon.ico'),
         iconUrl: 'https://raw.githubusercontent.com/DmytroVasin/DrawPen/main/assets/build/icon.ico',
         loadingGif: path.join(rootDir, 'assets/build/loading.gif'),
-        name: 'DrawPen',
-        shortcutName: 'DrawPen',
-        setupExe: 'DrawPen.Setup.exe',
+        name: 'DrawPenStylus',
+        shortcutName: 'DrawPen Stylus',
+        setupExe: 'DrawPenStylus.Setup.exe',
         noMsi: true
       }
     },
@@ -187,8 +187,8 @@ module.exports = {
       name: '@electron-forge/publisher-github',
       config: {
         repository: {
-          owner: packageJson.author.name,
-          name: packageJson.productName,
+          owner: 'jeromerg',
+          name: 'DrawPen',
         },
         draft: true
       }

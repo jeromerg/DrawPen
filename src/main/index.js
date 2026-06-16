@@ -1612,7 +1612,7 @@ function safeRegisterGlobalShortcut(accelerator, callback) {
 
 function setApplicationName() {
   if (isWin) {
-    app.setAppUserModelId('com.squirrel.DrawPen.DrawPen');
+    app.setAppUserModelId('com.squirrel.DrawPenStylus.DrawPenStylus');
   }
 }
 
