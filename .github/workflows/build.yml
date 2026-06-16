@@ -16,7 +16,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, macos-latest, ubuntu-latest]
+        # macOS is omitted for now: the maker-dmg needs the macOS-only optional
+        # dep `appdmg` (absent from a Windows-generated lockfile) and a signed
+        # build needs the APPLE_* secrets. Re-add 'macos-latest' once those are
+        # sorted. The stylus feature itself is Windows-only in v1.
+        os: [windows-latest, ubuntu-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
