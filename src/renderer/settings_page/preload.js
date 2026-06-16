@@ -23,6 +23,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   setFadeOutDurationTimeMs: (value) => ipcRenderer.invoke('set_fade_out_duration_time_ms', value),
   setStylusTool: (value) => ipcRenderer.invoke('set_stylus_tool', value),
   setStylusEraserTool: (value) => ipcRenderer.invoke('set_stylus_eraser_tool', value),
+  setStylusRevertGraceMs: (value) => ipcRenderer.invoke('set_stylus_revert_grace_ms', value),
 
   isMac: platform === 'darwin',
   isWin: platform === 'win32',

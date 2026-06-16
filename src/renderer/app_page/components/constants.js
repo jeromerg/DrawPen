@@ -9,6 +9,9 @@ export const fadeDisappearAfterMax = 15000;
 export const fadeOutDurationTimeMsMin = 300;
 export const fadeOutDurationTimeMsMax = 5000;
 export const fadeOutDestroyAfterMs = 300;
+// export const stylusRevertGrace = 500; // schema.stylus_revert_grace_ms.default
+export const stylusRevertGraceMin = 100;
+export const stylusRevertGraceMax = 5000;
 
 export const eraserTime = 100;
 export const rainbowScaleFactor = 0.03;
