@@ -23,7 +23,7 @@ const isDevelopment = process.env.NODE_ENV === 'development';
 
 // ---- Tuning constants --------------------------------------------------------
 const PEN_THROTTLE_MS = 16; // throttle pen events to ~60/s
-const MOUSE_HYSTERESIS_MS = 120; // min sustained mouse movement before emitting onMouseActivity
+const MOUSE_HYSTERESIS_MS = 120; // min sustained mouse movement before emitting onMouseActivity throttle
 
 // ---- Win32 constants ---------------------------------------------------------
 const WM_INPUT = 0x00ff;
@@ -38,11 +38,17 @@ const RIM_TYPEHID = 2;
 const RIDEV_REMOVE = 0x00000001;
 const RIDEV_INPUTSINK = 0x00000100;
 
-// HID usage pages / usages we care about.
+// HID usage pages / usages we care about. We register BOTH digitizer top-level
+// usages that pens use — 0x01 (Digitizer) and 0x02 (Pen) — because tablets vary:
+// e.g. an XPPen Deco Pro reports its pen on 0x0D/0x01, a direct pen display on
+// 0x0D/0x02. We deliberately do NOT register 0x04 (Touch Screen) / 0x05 (Touch
+// Pad), so finger touch never triggers the stylus auto-tool.
 const HID_USAGE_PAGE_GENERIC = 0x01;
 const HID_USAGE_GENERIC_MOUSE = 0x02;
 const HID_USAGE_PAGE_DIGITIZER = 0x0d;
+const HID_USAGE_DIGITIZER = 0x01;
 const HID_USAGE_DIGITIZER_PEN = 0x02;
+const RAWINPUT_DEVICE_COUNT = 3;
 
 // Message-only window parent: (HWND)-3, as an unsigned pointer-sized value.
 const HWND_MESSAGE = 0xfffffffffffffffdn;
@@ -217,22 +223,24 @@ export function createWindowsStylusWatcher(handlers = {}) {
     return DefWindowProcW(hWnd, msg, wParam, lParam);
   }
 
-  // Build the 2-entry RAWINPUTDEVICE array (pen + mouse) targeting our window.
+  // Build the RAWINPUTDEVICE array (digitizer + pen + mouse) targeting our window.
   function buildRawInputDevices(targetHwnd, flags) {
     // koffi returns HWND as a Number when it fits in a safe integer; writeBigUInt64LE
     // requires a BigInt, so coerce.
     const target = BigInt(targetHwnd);
-    const buf = Buffer.alloc(RAWINPUTDEVICE_SIZE * 2);
-    // [0] pen digitizer
-    buf.writeUInt16LE(HID_USAGE_PAGE_DIGITIZER, 0);
-    buf.writeUInt16LE(HID_USAGE_DIGITIZER_PEN, 2);
-    buf.writeUInt32LE(flags, 4);
-    buf.writeBigUInt64LE(target, 8);
-    // [1] mouse
-    buf.writeUInt16LE(HID_USAGE_PAGE_GENERIC, 16);
-    buf.writeUInt16LE(HID_USAGE_GENERIC_MOUSE, 18);
-    buf.writeUInt32LE(flags, 20);
-    buf.writeBigUInt64LE(target, 24);
+    const entries = [
+      [HID_USAGE_PAGE_DIGITIZER, HID_USAGE_DIGITIZER],      // pen reported as a generic digitizer (e.g. XPPen Deco)
+      [HID_USAGE_PAGE_DIGITIZER, HID_USAGE_DIGITIZER_PEN],  // pen reported as a pen (e.g. direct pen displays)
+      [HID_USAGE_PAGE_GENERIC, HID_USAGE_GENERIC_MOUSE],    // genuine mouse (for the revert signal)
+    ];
+    const buf = Buffer.alloc(RAWINPUTDEVICE_SIZE * entries.length);
+    entries.forEach(([page, usage], i) => {
+      const off = i * RAWINPUTDEVICE_SIZE;
+      buf.writeUInt16LE(page, off);
+      buf.writeUInt16LE(usage, off + 2);
+      buf.writeUInt32LE(flags, off + 4);
+      buf.writeBigUInt64LE(target, off + 8);
+    });
     return buf;
   }
 
@@ -276,7 +284,7 @@ export function createWindowsStylusWatcher(handlers = {}) {
       }
 
       const devices = buildRawInputDevices(hwnd, RIDEV_INPUTSINK);
-      const ok = RegisterRawInputDevices(devices, 2, RAWINPUTDEVICE_SIZE);
+      const ok = RegisterRawInputDevices(devices, RAWINPUT_DEVICE_COUNT, RAWINPUTDEVICE_SIZE);
       if (!ok) {
         log('RegisterRawInputDevices failed; stylus watcher disabled');
         stop();
@@ -312,7 +320,7 @@ export function createWindowsStylusWatcher(handlers = {}) {
       if (rawInputRegistered && hwnd) {
         // Unregister raw input (hwndTarget must be NULL when removing).
         const devices = buildRawInputDevices(0n, RIDEV_REMOVE);
-        RegisterRawInputDevices(devices, 2, RAWINPUTDEVICE_SIZE);
+        RegisterRawInputDevices(devices, RAWINPUT_DEVICE_COUNT, RAWINPUTDEVICE_SIZE);
       }
     } catch (err) {
       log('Unregister raw input threw:', err && err.message);
