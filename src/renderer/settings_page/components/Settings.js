@@ -13,6 +13,7 @@ import {
   stylusRevertGraceMin,
   stylusRevertGraceMax,
   STYLUS_TOOL_OPTIONS,
+  TOUCH_TOOL_OPTIONS,
   STYLUS_ERASER_TOOL_OPTIONS,
 } from "../../app_page/components/constants.js";
 
@@ -77,6 +78,7 @@ const Settings = (config) => {
   const [secondaryColor, setSecondaryColor] = useState(config.swap_colors_indexes[1]);
   const [drawingMonitor, setDrawingMonitor] = useState(config.drawing_monitor);
   const [stylusTool, setStylusTool] = useState(config.stylus_tool || 'none');
+  const [touchTool, setTouchTool] = useState(config.touch_tool || 'none');
   const [stylusEraserTool, setStylusEraserTool] = useState(config.stylus_eraser_tool || 'eraser');
   const [stylusRevertGraceMs, setStylusRevertGraceMs] = useState(config.stylus_revert_grace_ms);
 
@@ -282,6 +284,12 @@ const Settings = (config) => {
     window.electronAPI.setStylusTool(value);
   };
 
+  const selectTouchTool = (event) => {
+    const value = event.target.value;
+    setTouchTool(value);
+    window.electronAPI.setTouchTool(value);
+  };
+
   return (
     <div className="settings-page">
       <div className="settings-sidebar-wrapper">
@@ -315,7 +323,7 @@ const Settings = (config) => {
             onClick={() => setActiveTab('stylus')}
           >
             <IoBrushOutline className="icon" />
-            Stylus
+            Stylus & Touch
           </div>
 
           <div className="settings-sidebar-version">
@@ -646,7 +654,7 @@ const Settings = (config) => {
         {activeTab === 'stylus' && (
           <div className="settings-container">
             <div className="settings-header">
-              <div className="settings-title">Stylus</div>
+              <div className="settings-title">Stylus & Touch</div>
             </div>
 
             <div className="settings-content">
@@ -672,6 +680,38 @@ const Settings = (config) => {
                       >
                         {
                           STYLUS_TOOL_OPTIONS.map(option => (
+                            <option key={option.value} value={option.value}>{option.label}</option>
+                          ))
+                        }
+                      </select>
+
+                      <div className="selectbar-arrow">
+                        <IoChevronDown className="icon" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="settings-item">
+                  <div className="settings-item-info">
+                    <div className="settings-item-title">Tool on touch</div>
+                    <div className="settings-item-description">Touch the screen to auto-activate this tool; move the mouse to switch back.</div>
+                    {
+                      !window.electronAPI.isWin &&
+                        <div className="settings-item-description">Available on Windows only</div>
+                    }
+                  </div>
+
+                  <div className="settings-item-control">
+                    <div className="selectbar-container">
+                      <select
+                        className="selectbar"
+                        value={touchTool}
+                        onChange={selectTouchTool}
+                        disabled={!window.electronAPI.isWin}
+                      >
+                        {
+                          TOUCH_TOOL_OPTIONS.map(option => (
                             <option key={option.value} value={option.value}>{option.label}</option>
                           ))
                         }
