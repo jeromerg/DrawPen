@@ -41,6 +41,19 @@ export const STYLUS_TOOL_OPTIONS = [
   { value: 'line',        label: 'Line' },
 ];
 
+export const TOUCH_TOOL_OPTIONS = [
+  { value: 'none',        label: 'None' },
+  { value: 'pen',         label: 'Pen' },
+  { value: 'fadepen',     label: 'Fading Pen' },
+  { value: 'highlighter', label: 'Highlighter' },
+  { value: 'laser',       label: 'Laser' },
+  { value: 'arrow',       label: 'Arrow' },
+  { value: 'flat_arrow',  label: 'Flat Arrow' },
+  { value: 'rectangle',   label: 'Rectangle' },
+  { value: 'oval',        label: 'Oval' },
+  { value: 'line',        label: 'Line' },
+];
+
 export const STYLUS_ERASER_TOOL_OPTIONS = [
   { value: 'eraser',      label: 'Eraser' },
   { value: 'pen',         label: 'Pen' },
