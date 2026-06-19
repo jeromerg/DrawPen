@@ -7,12 +7,17 @@
 // classifies by *device*, not by a promoted-mouse signature, so it sees the pen
 // directly regardless of the tablet's "Windows Ink" setting.
 //
-// Design: a hidden message-only window receives WM_INPUT for two registered
-// device classes — the pen digitizer (usage page 0x0D, usage 0x02) and the
-// mouse (usage page 0x01, usage 0x02), both with RIDEV_INPUTSINK so input
-// arrives even when DrawPen has no focus/visible window. The window's WndProc
-// (a koffi-registered callback) classifies each WM_INPUT by the RAWINPUTHEADER
-// device type: RIM_TYPEHID -> pen, RIM_TYPEMOUSE -> mouse. Electron's main
+// Design: a hidden message-only window receives WM_INPUT for the registered
+// device classes — the pen digitizer (usage page 0x0D, usages 0x01/0x02), the
+// touch screen (usage page 0x0D, usage 0x04), and the mouse (usage page 0x01,
+// usage 0x02), all with RIDEV_INPUTSINK so input arrives even when DrawPen has
+// no focus/visible window. The window's WndProc (a koffi-registered callback)
+// classifies each WM_INPUT by the RAWINPUTHEADER device type: RIM_TYPEMOUSE ->
+// mouse, RIM_TYPEHID -> pen *or* touch. Because pen and touch both arrive as
+// RIM_TYPEHID, the HID branch is further disambiguated by the source device:
+// GetRawInputDeviceInfoW(hDevice, RIDI_DEVICEINFO) yields the device's
+// RID_DEVICE_INFO_HID.usUsage (0x04 = touch screen, else pen), cached per
+// hDevice so it costs one syscall per device, not per event. Electron's main
 // thread already pumps the Win32 message loop, so the WndProc fires there.
 //
 // koffi is a CommonJS native module; this file is only ever required on win32
@@ -23,6 +28,7 @@ const isDevelopment = process.env.NODE_ENV === 'development';
 
 // ---- Tuning constants --------------------------------------------------------
 const PEN_THROTTLE_MS = 16; // throttle pen events to ~60/s
+const TOUCH_THROTTLE_MS = 16; // throttle touch events to ~60/s
 const MOUSE_HYSTERESIS_MS = 120; // min sustained mouse movement before emitting onMouseActivity throttle
 
 // ---- Win32 constants ---------------------------------------------------------
@@ -31,6 +37,16 @@ const WM_INPUT = 0x00ff;
 const RID_HEADER = 0x10000005; // GetRawInputData: fetch only the RAWINPUTHEADER
 const RAWINPUTHEADER_SIZE = 24; // x64: DWORD dwType; DWORD dwSize; HANDLE hDevice; WPARAM wParam;
 const RAWINPUTDEVICE_SIZE = 16; // USHORT usUsagePage; USHORT usUsage; DWORD dwFlags; HWND hwndTarget;
+
+const RIDI_DEVICEINFO = 0x2000000b; // GetRawInputDeviceInfoW: fetch the RID_DEVICE_INFO
+// RID_DEVICE_INFO (x64): DWORD cbSize; DWORD dwType; then the union. The HID
+// branch RID_DEVICE_INFO_HID { DWORD dwVendorId(8); DWORD dwProductId(12); DWORD
+// dwVersionNumber(16); USHORT usUsagePage(20); USHORT usUsage(22); } starts at
+// offset 8 — so usUsagePage is at offset 20 and usUsage at offset 22. A 32-byte
+// buffer comfortably holds it.
+const RID_DEVICE_INFO_SIZE = 32;
+const RID_DEVICE_INFO_HID_USAGE_PAGE_OFFSET = 20;
+const RID_DEVICE_INFO_HID_USAGE_OFFSET = 22;
 
 const RIM_TYPEMOUSE = 0;
 const RIM_TYPEHID = 2;
@@ -41,19 +57,28 @@ const RIDEV_INPUTSINK = 0x00000100;
 // HID usage pages / usages we care about. We register BOTH digitizer top-level
 // usages that pens use — 0x01 (Digitizer) and 0x02 (Pen) — because tablets vary:
 // e.g. an XPPen Deco Pro reports its pen on 0x0D/0x01, a direct pen display on
-// 0x0D/0x02. We deliberately do NOT register 0x04 (Touch Screen) / 0x05 (Touch
-// Pad), so finger touch never triggers the stylus auto-tool.
+// 0x0D/0x02. We also register 0x04 (Touch Screen) so finger touch can trigger
+// the touch auto-tool; since pen and touch both arrive as RIM_TYPEHID, the
+// WndProc disambiguates them via GetRawInputDeviceInfoW (see classifyDevice).
+// We deliberately do NOT register 0x05 (Touch Pad) — that is the laptop
+// trackpad, and finger-on-trackpad must never trigger draw mode.
 const HID_USAGE_PAGE_GENERIC = 0x01;
 const HID_USAGE_GENERIC_MOUSE = 0x02;
 const HID_USAGE_PAGE_DIGITIZER = 0x0d;
 const HID_USAGE_DIGITIZER = 0x01;
 const HID_USAGE_DIGITIZER_PEN = 0x02;
-const RAWINPUT_DEVICE_COUNT = 3;
+const HID_USAGE_DIGITIZER_TOUCH_SCREEN = 0x04;
+const RAWINPUT_DEVICE_COUNT = 4;
 
 // Message-only window parent: (HWND)-3, as an unsigned pointer-sized value.
 const HWND_MESSAGE = 0xfffffffffffffffdn;
 
 const CLASS_NAME = 'DrawPenStylusRawInputWnd';
+
+// Cache of source-device classification (hDevice as BigInt -> 'pen' | 'touch').
+// Pen and touch both arrive as RIM_TYPEHID, so we classify by device once and
+// reuse the result for every subsequent event from that device.
+const deviceKind = new Map();
 
 function log(...args) {
   if (isDevelopment) {
@@ -63,6 +88,7 @@ function log(...args) {
 
 export function createWindowsStylusWatcher(handlers = {}) {
   const onPenActivity = typeof handlers.onPenActivity === 'function' ? handlers.onPenActivity : () => {};
+  const onTouchActivity = typeof handlers.onTouchActivity === 'function' ? handlers.onTouchActivity : () => {};
   const onMouseActivity = typeof handlers.onMouseActivity === 'function' ? handlers.onMouseActivity : () => {};
 
   // FFI state (resolved once; reused across start/stop cycles).
@@ -75,6 +101,7 @@ export function createWindowsStylusWatcher(handlers = {}) {
   let DefWindowProcW = null;
   let RegisterRawInputDevices = null;
   let GetRawInputData = null;
+  let GetRawInputDeviceInfoW = null;
   let GetModuleHandleW = null;
   let WndProcPtr = null; // koffi pointer type for the WndProc prototype
   let WNDCLASSEXW = null; // koffi struct type
@@ -91,11 +118,14 @@ export function createWindowsStylusWatcher(handlers = {}) {
   // Reusable scratch buffers for the WndProc (avoid per-event allocation).
   let headerBuf = null;
   let headerSizeBuf = null;
+  let deviceInfoBuf = null;
+  let deviceInfoSizeBuf = null;
 
   // Classification / debounce state.
   let lastPenEmit = 0;
+  let lastTouchEmit = 0;
   let mousePendingTimer = null;
-  let lastPenActivityTime = 0;
+  let lastAutoActivityTime = 0; // last pen OR touch activity (wins over a pending mouse revert)
 
   function loadFFI() {
     if (RegisterClassExW) return true; // already loaded
@@ -142,10 +172,13 @@ export function createWindowsStylusWatcher(handlers = {}) {
       DefWindowProcW = user32.func('intptr_t __stdcall DefWindowProcW(uintptr_t, uint32, uintptr_t, intptr_t)');
       RegisterRawInputDevices = user32.func('int __stdcall RegisterRawInputDevices(void *, uint32, uint32)');
       GetRawInputData = user32.func('uint32 __stdcall GetRawInputData(intptr_t, uint32, void *, uint32 *, uint32)');
+      GetRawInputDeviceInfoW = user32.func('uint32 __stdcall GetRawInputDeviceInfoW(intptr_t, uint32, void *, uint32 *)');
       GetModuleHandleW = kernel32.func('uintptr_t __stdcall GetModuleHandleW(uintptr_t)');
 
       headerBuf = Buffer.alloc(RAWINPUTHEADER_SIZE);
       headerSizeBuf = Buffer.alloc(4);
+      deviceInfoBuf = Buffer.alloc(RID_DEVICE_INFO_SIZE);
+      deviceInfoSizeBuf = Buffer.alloc(4);
 
       supported = true;
       return true;
@@ -161,7 +194,7 @@ export function createWindowsStylusWatcher(handlers = {}) {
   // pending mouse emit (the user is using the pen, not the mouse).
   function emitPen() {
     const now = Date.now();
-    lastPenActivityTime = now;
+    lastAutoActivityTime = now;
 
     if (mousePendingTimer) {
       clearTimeout(mousePendingTimer);
@@ -183,6 +216,67 @@ export function createWindowsStylusWatcher(handlers = {}) {
     });
   }
 
+  // Emit a touch-activity event, throttled to ~60/s. Mirrors emitPen: any touch
+  // activity also cancels a pending mouse emit (the user is touching, not on the
+  // mouse), and feeds the same lastAutoActivityTime that wins the mouse race.
+  function emitTouch() {
+    const now = Date.now();
+    lastAutoActivityTime = now;
+
+    if (mousePendingTimer) {
+      clearTimeout(mousePendingTimer);
+      mousePendingTimer = null;
+    }
+
+    if (now - lastTouchEmit < TOUCH_THROTTLE_MS) return;
+    lastTouchEmit = now;
+
+    // Defer off the WndProc so we never block the message loop. We cannot detect
+    // a finger lift cheaply from the header alone, so contact is reported false;
+    // continuous touch reports keep the session alive via the hysteresis above.
+    setImmediate(() => {
+      try {
+        onTouchActivity({ contact: false });
+      } catch (err) {
+        log('onTouchActivity handler threw:', err && err.message);
+      }
+    });
+  }
+
+  // Classify a RIM_TYPEHID source device as 'pen' or 'touch'. Pen and touch both
+  // arrive as RIM_TYPEHID, so we look up the device's HID top-level usage via
+  // GetRawInputDeviceInfoW(RIDI_DEVICEINFO): usUsage 0x04 = touch screen, else
+  // pen. Cached per hDevice (one syscall per device, not per event). On failure
+  // we default to 'pen' WITHOUT caching, so a later event can retry.
+  function classifyDevice(hDevice) {
+    const cached = deviceKind.get(hDevice);
+    if (cached) return cached;
+
+    try {
+      // RIDI_DEVICEINFO uses cbSize (offset 0) as the in/out buffer size; the
+      // *pcbSize argument must also be pre-set to the buffer size in bytes.
+      deviceInfoBuf.writeUInt32LE(RID_DEVICE_INFO_SIZE, 0);
+      deviceInfoSizeBuf.writeUInt32LE(RID_DEVICE_INFO_SIZE, 0);
+      // intptr_t accepts the value koffi hands us (Number or BigInt).
+      const res = GetRawInputDeviceInfoW(hDevice, RIDI_DEVICEINFO, deviceInfoBuf, deviceInfoSizeBuf);
+      if (res === 0xffffffff || res === 0) {
+        return 'pen'; // failure — default to pen, do NOT cache so we can retry
+      }
+      const usUsagePage = deviceInfoBuf.readUInt16LE(RID_DEVICE_INFO_HID_USAGE_PAGE_OFFSET);
+      const usUsage = deviceInfoBuf.readUInt16LE(RID_DEVICE_INFO_HID_USAGE_OFFSET);
+      const kind =
+        usUsagePage === HID_USAGE_PAGE_DIGITIZER && usUsage === HID_USAGE_DIGITIZER_TOUCH_SCREEN
+          ? 'touch'
+          : 'pen';
+      deviceKind.set(hDevice, kind);
+      log('Classified HID device', hDevice.toString(), 'usagePage', usUsagePage, 'usUsage', usUsage, '->', kind);
+      return kind;
+    } catch (err) {
+      log('GetRawInputDeviceInfoW threw; defaulting to pen:', err && err.message);
+      return 'pen'; // do NOT cache on error
+    }
+  }
+
   // Arm a hysteresis timer on mouse input. Only emit onMouseActivity if no pen
   // activity intervened during the window (the user is genuinely on the mouse).
   function noteMouseMove() {
@@ -190,7 +284,7 @@ export function createWindowsStylusWatcher(handlers = {}) {
     const armedAt = Date.now();
     mousePendingTimer = setTimeout(() => {
       mousePendingTimer = null;
-      if (lastPenActivityTime >= armedAt) return; // pen won — suppress
+      if (lastAutoActivityTime >= armedAt) return; // pen/touch won — suppress
       try {
         onMouseActivity();
       } catch (err) {
@@ -210,8 +304,15 @@ export function createWindowsStylusWatcher(handlers = {}) {
           const dwType = headerBuf.readUInt32LE(0);
 
           if (dwType === RIM_TYPEHID) {
-            // From our digitizer (usage page 0x0D, usage 0x02 = pen) registration.
-            emitPen();
+            // Pen and touch both arrive as RIM_TYPEHID; disambiguate by source
+            // device. hDevice sits in the RAWINPUTHEADER at offset 8 (after
+            // dwType + dwSize DWORDs), pointer-sized.
+            const hDevice = headerBuf.readBigUInt64LE(8);
+            if (classifyDevice(hDevice) === 'touch') {
+              emitTouch();
+            } else {
+              emitPen();
+            }
           } else if (dwType === RIM_TYPEMOUSE) {
             noteMouseMove();
           }
@@ -223,15 +324,16 @@ export function createWindowsStylusWatcher(handlers = {}) {
     return DefWindowProcW(hWnd, msg, wParam, lParam);
   }
 
-  // Build the RAWINPUTDEVICE array (digitizer + pen + mouse) targeting our window.
+  // Build the RAWINPUTDEVICE array (digitizer + pen + touch + mouse) targeting our window.
   function buildRawInputDevices(targetHwnd, flags) {
     // koffi returns HWND as a Number when it fits in a safe integer; writeBigUInt64LE
     // requires a BigInt, so coerce.
     const target = BigInt(targetHwnd);
     const entries = [
-      [HID_USAGE_PAGE_DIGITIZER, HID_USAGE_DIGITIZER],      // pen reported as a generic digitizer (e.g. XPPen Deco)
-      [HID_USAGE_PAGE_DIGITIZER, HID_USAGE_DIGITIZER_PEN],  // pen reported as a pen (e.g. direct pen displays)
-      [HID_USAGE_PAGE_GENERIC, HID_USAGE_GENERIC_MOUSE],    // genuine mouse (for the revert signal)
+      [HID_USAGE_PAGE_DIGITIZER, HID_USAGE_DIGITIZER],            // pen reported as a generic digitizer (e.g. XPPen Deco)
+      [HID_USAGE_PAGE_DIGITIZER, HID_USAGE_DIGITIZER_PEN],        // pen reported as a pen (e.g. direct pen displays)
+      [HID_USAGE_PAGE_DIGITIZER, HID_USAGE_DIGITIZER_TOUCH_SCREEN], // touch screen (classified per-device in the WndProc)
+      [HID_USAGE_PAGE_GENERIC, HID_USAGE_GENERIC_MOUSE],          // genuine mouse (for the revert signal)
     ];
     const buf = Buffer.alloc(RAWINPUTDEVICE_SIZE * entries.length);
     entries.forEach(([page, usage], i) => {
@@ -292,7 +394,7 @@ export function createWindowsStylusWatcher(handlers = {}) {
       }
       rawInputRegistered = true;
 
-      log('Raw Input watcher started (digitizer pen + mouse, INPUTSINK)');
+      log('Raw Input watcher started (digitizer pen + touch screen + mouse, INPUTSINK)');
     } catch (err) {
       log('Failed to start Raw Input watcher; stylus watcher disabled:', err && err.message);
       stop();
